@@ -58,7 +58,8 @@ jobs:
       - name: Push chart to GHCR
         run: |
           helm package charts/atlantis
-          helm push atlantis-*.tgz oci://ghcr.io/${GITHUB_REPOSITORY_OWNER}/charts
+          REPO_OWNER_LOWER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          helm push atlantis-*.tgz oci://ghcr.io/${REPO_OWNER_LOWER}/charts
 
       - name: Get chart info
         id: chart-info
