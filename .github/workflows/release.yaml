@@ -64,8 +64,9 @@ jobs:
         id: chart-info
         run: |
           CHART_VERSION=$(yq e '.version' charts/atlantis/Chart.yaml)
+          REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "version=${CHART_VERSION}" >> $GITHUB_OUTPUT
-          echo "subject-name=ghcr.io/${{ github.repository_owner }}/charts/atlantis:${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "subject-name=ghcr.io/${REPO_OWNER_LOWER}/charts/atlantis:${CHART_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Attest chart OCI artifact
         uses: actions/attest-build-provenance@v3
