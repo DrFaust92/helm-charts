@@ -56,10 +56,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push chart to GHCR
+        id: push-chart
         run: |
           helm package charts/atlantis
           REPO_OWNER_LOWER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
-          helm push atlantis-*.tgz oci://ghcr.io/${REPO_OWNER_LOWER}/charts
+          PUSH_OUTPUT=$(helm push atlantis-*.tgz oci://ghcr.io/${REPO_OWNER_LOWER}/charts)
+          echo "push-output=${PUSH_OUTPUT}" >> $GITHUB_OUTPUT
+          # Extract digest from helm push output
+          DIGEST=$(echo "${PUSH_OUTPUT}" | grep -o 'sha256:[a-f0-9]*' || echo "")
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Get chart info
         id: chart-info
@@ -72,5 +77,6 @@ jobs:
       - name: Attest chart OCI artifact
         uses: actions/attest-build-provenance@v3
         with:
-          subject-path: ${{ steps.chart-info.outputs.subject-name }}
+          subject-name: ${{ steps.chart-info.outputs.subject-name }}
+          subject-digest: ${{ steps.push-chart.outputs.digest }}
           push-to-registry: true
