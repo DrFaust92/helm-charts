@@ -72,5 +72,5 @@ jobs:
       - name: Attest chart OCI artifact
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ${{ steps.chart-info.outputs.subject-name }}
+          subject-path: ${{ steps.chart-info.outputs.subject-name }}
           push-to-registry: true
