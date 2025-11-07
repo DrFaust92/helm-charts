@@ -60,10 +60,25 @@ jobs:
         run: |
           helm package charts/atlantis
           REPO_OWNER_LOWER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
-          PUSH_OUTPUT=$(helm push atlantis-*.tgz oci://ghcr.io/${REPO_OWNER_LOWER}/charts)
-          echo "push-output=${PUSH_OUTPUT}" >> $GITHUB_OUTPUT
-          # Extract digest from helm push output
-          DIGEST=$(echo "${PUSH_OUTPUT}" | grep -o 'sha256:[a-f0-9]*' || echo "")
+          echo "Pushing chart to GHCR..."
+          PUSH_OUTPUT=$(helm push atlantis-*.tgz oci://ghcr.io/${REPO_OWNER_LOWER}/charts 2>&1)
+          echo "Push output: ${PUSH_OUTPUT}"
+          
+          # Try multiple patterns to extract digest
+          DIGEST=$(echo "${PUSH_OUTPUT}" | grep -oE 'sha256:[a-f0-9]{64}' | head -1)
+          if [ -z "$DIGEST" ]; then
+            DIGEST=$(echo "${PUSH_OUTPUT}" | grep -oE '@sha256:[a-f0-9]{64}' | sed 's/@//' | head -1)
+          fi
+          if [ -z "$DIGEST" ]; then
+            DIGEST=$(echo "${PUSH_OUTPUT}" | grep -oE 'digest: sha256:[a-f0-9]{64}' | sed 's/digest: //' | head -1)
+          fi
+          
+          echo "Extracted digest: ${DIGEST}"
+          if [ -z "$DIGEST" ]; then
+            echo "Warning: Could not extract digest from helm push output"
+            echo "Full output was: ${PUSH_OUTPUT}"
+            exit 1
+          fi
           echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
       - name: Get chart info
