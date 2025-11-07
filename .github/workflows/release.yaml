@@ -6,6 +6,12 @@ on:
       - main
     paths:
       - 'charts/atlantis/**'
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: 'Chart version to release (optional, will use Chart.yaml version if not provided)'
+        required: false
+        type: string
 
 permissions: read-all
 
@@ -54,8 +60,15 @@ jobs:
           helm package charts/atlantis
           helm push atlantis-*.tgz oci://ghcr.io/${GITHUB_REPOSITORY_OWNER}/charts
 
+      - name: Get chart info
+        id: chart-info
+        run: |
+          CHART_VERSION=$(yq e '.version' charts/atlantis/Chart.yaml)
+          echo "version=${CHART_VERSION}" >> $GITHUB_OUTPUT
+          echo "subject-name=ghcr.io/${{ github.repository_owner }}/charts/atlantis:${CHART_VERSION}" >> $GITHUB_OUTPUT
+
       - name: Attest chart OCI artifact
         uses: actions/attest-build-provenance@v3
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/charts/atlantis:$(yq e '.version' charts/atlantis/Chart.yaml)
+          subject-name: ${{ steps.chart-info.outputs.subject-name }}
           push-to-registry: true
